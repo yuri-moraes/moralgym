@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MoralGym — logo monograma.
+  Grid 512x512 (safe-area central de 410x410 para compatibilidade maskable).
+  Glifo: um "M" construído a partir de uma barra de peso estilizada — as
+  duas colunas externas são placas, os cortes diagonais internos são a barra.
+  Cores escolhidas para OLED: fundo #0B0B0D (=app theme_color), traço branco
+  puro #FFFFFF com leve gradiente prateado nos pesos para evocar metal.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="MoralGym">
+  <defs>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F5F5F7" />
+      <stop offset="55%" stop-color="#C8C9CE" />
+      <stop offset="100%" stop-color="#8D8E95" />
+    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0B0B0D" />
+      <stop offset="100%" stop-color="#15161A" />
+    </linearGradient>
+  </defs>
+
+  <!-- Fundo escuro (OLED-friendly). Omitido na versão transparente. -->
+  <rect width="512" height="512" rx="96" ry="96" fill="url(#bg)" />
+
+  <!-- Placas laterais (verticais). Espessura 56, altura 280, centradas. -->
+  <rect x="96"  y="116" width="56" height="280" rx="10" ry="10" fill="url(#steel)" />
+  <rect x="360" y="116" width="56" height="280" rx="10" ry="10" fill="url(#steel)" />
+
+  <!-- "Barra" em V formando o corpo do M. Traço grosso, pontas arredondadas. -->
+  <path
+    d="M 152 152 L 256 336 L 360 152"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="48"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
