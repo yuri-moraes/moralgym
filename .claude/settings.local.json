@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o /home/yurin/moralgym/LICENSE)"
+    ]
+  }
+}
