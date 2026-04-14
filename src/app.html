@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR" class="dark">
+	<head>
+		<meta charset="utf-8" />
+
+		<!--
+			viewport-fit=cover é obrigatório para que env(safe-area-inset-*) tenha
+			valor real no iOS; sem isso o notch "come" o conteúdo. user-scalable=0
+			previne o zoom acidental em double-tap, comum durante o registro de
+			sets na tela cheia da academia.
+		-->
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover"
+		/>
+
+		<!-- Cor da barra de status (Android Chrome / Edge / Samsung Internet). -->
+		<meta name="theme-color" content="#0B0B0D" />
+
+		<!-- iOS standalone: roda fullscreen quando adicionado à tela inicial. -->
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<meta name="apple-mobile-web-app-title" content="MoralGym" />
+
+		<!-- Spec moderna (substitui a legada apple-mobile-web-app-capable). -->
+		<meta name="mobile-web-app-capable" content="yes" />
+
+		<!-- Evita que iOS Safari "linkifique" números (séries × reps × kg). -->
+		<meta name="format-detection" content="telephone=no" />
+
+		<meta name="description" content="MoralGym — diário de treino offline-first." />
+
+		<link rel="icon" href="%sveltekit.assets%/logo.svg" type="image/svg+xml" />
+		<link rel="apple-touch-icon" href="%sveltekit.assets%/icons/pwa-192x192.png" />
+
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover" class="bg-[#0B0B0D] text-gray-100">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>

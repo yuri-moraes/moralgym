@@ -1,0 +1,27 @@
+# EditorConfig — http://editorconfig.org
+# Padrão do ecossistema Svelte/SvelteKit: tabs para indentação, LF, UTF-8.
+root = true
+
+[*]
+indent_style = tab
+indent_size = 2
+tab_width = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+max_line_length = 100
+
+# Markdown: trailing spaces podem ter significado (quebra de linha).
+[*.md]
+trim_trailing_whitespace = false
+
+# YAML / JSON exigem espaços (não aceitam tabs em alguns parsers).
+[*.{yml,yaml,json,jsonc}]
+indent_style = space
+indent_size = 2
+
+# package.json: npm normaliza para 2 espaços ao salvar.
+[package.json]
+indent_style = space
+indent_size = 2

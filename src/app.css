@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	/*
+	 * Mobile-first hardening:
+	 *  - Tap highlight transparente: o "flash" cinza nativo do Android/iOS
+	 *    polui o feedback visual dos nossos botões (que já têm :active próprio).
+	 *  - text-size-adjust: impede que iOS aumente fonts em rotação landscape.
+	 *  - overscroll-behavior: cancela o "bounce" branco fora do app, que vaza
+	 *    o background do <body> e estraga a sensação de "app nativo".
+	 *  - touch-action: manipulation desliga o atraso de 300ms do double-tap zoom
+	 *    (já redundante com user-scalable=0, mas defensivo p/ navegadores teimosos).
+	 */
+	html {
+		-webkit-text-size-adjust: 100%;
+		text-size-adjust: 100%;
+		-webkit-tap-highlight-color: transparent;
+		overscroll-behavior: none;
+		touch-action: manipulation;
+	}
+
+	body {
+		min-height: 100dvh;
+		font-family:
+			'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+			sans-serif;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+
+	/*
+	 * O scrim azul do iOS em <button>/<a> selecionados foi removido acima;
+	 * mantemos foco visível para acessibilidade via teclado.
+	 */
+	:focus-visible {
+		outline: 2px solid #6366f1;
+		outline-offset: 2px;
+		border-radius: 4px;
+	}
+
+	/* Reset de aparência nativa em inputs numéricos (peso/reps). */
+	input[type='number']::-webkit-outer-spin-button,
+	input[type='number']::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+	input[type='number'] {
+		-moz-appearance: textfield;
+		appearance: textfield;
+	}
+}
+
+@layer utilities {
+	/* Atalho para áreas que precisam respeitar o notch sem repetir env() inline. */
+	.safe-top {
+		padding-top: env(safe-area-inset-top);
+	}
+	.safe-bottom {
+		padding-bottom: env(safe-area-inset-bottom);
+	}
+}
