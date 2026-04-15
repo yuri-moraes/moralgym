@@ -19,28 +19,49 @@
 	}
 
 	interface DaySession {
-		/** ISO date string sem hora — ex.: "2026-04-14" */
 		dateKey: string;
-		label: string; // "Hoje", "Ontem" ou "14 abr. 2026"
+		label: string;
 		exercises: ExerciseEntry[];
+		totalSets: number;
 	}
+
+	const MUSCLE_GROUP_LABELS: Record<string, string> = {
+		chest: 'Peito', back: 'Costas', shoulders: 'Ombros',
+		biceps: 'Bíceps', triceps: 'Tríceps', forearms: 'Antebraços',
+		quads: 'Quadríceps', hamstrings: 'Isquiotibiais', glutes: 'Glúteos',
+		calves: 'Panturrilhas', abs: 'Abdômen', other: 'Outro'
+	};
+
+	// Cor do badge por grupo muscular
+	const MUSCLE_COLORS: Record<string, string> = {
+		chest:      'bg-blue-500/15 text-blue-400',
+		back:       'bg-emerald-500/15 text-emerald-400',
+		shoulders:  'bg-violet-500/15 text-violet-400',
+		biceps:     'bg-amber-500/15 text-amber-400',
+		triceps:    'bg-rose-500/15 text-rose-400',
+		forearms:   'bg-orange-500/15 text-orange-400',
+		quads:      'bg-cyan-500/15 text-cyan-400',
+		hamstrings: 'bg-teal-500/15 text-teal-400',
+		glutes:     'bg-pink-500/15 text-pink-400',
+		calves:     'bg-indigo-500/15 text-indigo-400',
+		abs:        'bg-lime-500/15 text-lime-400',
+		other:      'bg-gym-surface text-gym-muted',
+	};
 
 	let loadState = $state<LoadState>('loading');
 	let sessions = $state<DaySession[]>([]);
+	let totalSetsAll = $derived(sessions.reduce((a, s) => a + s.totalSets, 0));
 	let errorMessage = $state<string | null>(null);
 
-	/** Formata epoch ms para chave de dia local (YYYY-MM-DD). */
 	function toDayKey(date: Date): string {
-		return date.toLocaleDateString('sv'); // 'sv' locale usa ISO 8601 por padrão
+		return date.toLocaleDateString('sv');
 	}
 
-	/** Rótulo amigável para datas recentes. */
 	function dayLabel(dateKey: string): string {
 		const today = toDayKey(new Date());
 		const yesterday = toDayKey(new Date(Date.now() - 86_400_000));
 		if (dateKey === today) return 'Hoje';
 		if (dateKey === yesterday) return 'Ontem';
-		// "seg., 14 abr. 2026" — compacto mas legível
 		const [year, month, day] = dateKey.split('-').map(Number);
 		return new Date(year, month - 1, day).toLocaleDateString('pt-BR', {
 			weekday: 'short',
@@ -49,21 +70,6 @@
 			year: 'numeric'
 		});
 	}
-
-	const MUSCLE_GROUP_LABELS: Record<string, string> = {
-		chest: 'Peito',
-		back: 'Costas',
-		shoulders: 'Ombros',
-		biceps: 'Bíceps',
-		triceps: 'Tríceps',
-		forearms: 'Antebraços',
-		quads: 'Quadríceps',
-		hamstrings: 'Isquiotibiais',
-		glutes: 'Glúteos',
-		calves: 'Panturrilhas',
-		abs: 'Abdômen',
-		other: 'Outro'
-	};
 
 	onMount(() => {
 		(async () => {
@@ -77,7 +83,6 @@
 					return;
 				}
 
-				// Resolver nomes dos exercícios em paralelo (sem repetir IDs).
 				const uniqueExerciseIds = [...new Set<string>(logs.map((l) => l.exerciseId))];
 				const exerciseMap = new Map<string, Exercise>();
 				await Promise.all(
@@ -87,21 +92,13 @@
 					})
 				);
 
-				// Agrupar logs por dia, depois por exercício dentro do dia.
-				// logs já chegam ordenados do mais recente para o mais antigo (findAll usa reverse()).
 				const dayMap = new Map<string, Map<string, SetRow[]>>();
 
 				for (const log of logs) {
 					const dayKey = toDayKey(log.performedAt);
-
-					if (!dayMap.has(dayKey)) {
-						dayMap.set(dayKey, new Map());
-					}
+					if (!dayMap.has(dayKey)) dayMap.set(dayKey, new Map());
 					const exerciseMap2 = dayMap.get(dayKey)!;
-
-					if (!exerciseMap2.has(log.exerciseId)) {
-						exerciseMap2.set(log.exerciseId, []);
-					}
+					if (!exerciseMap2.has(log.exerciseId)) exerciseMap2.set(log.exerciseId, []);
 					exerciseMap2.get(log.exerciseId)!.push({
 						setNumber: log.setNumber,
 						reps: log.reps,
@@ -110,22 +107,22 @@
 					});
 				}
 
-				// Converter Map aninhado → array tipado.
 				const result: DaySession[] = [];
 				for (const [dateKey, exerciseEntries] of dayMap.entries()) {
 					const exerciseList: ExerciseEntry[] = [];
+					let totalSets = 0;
 					for (const [exerciseId, sets] of exerciseEntries.entries()) {
 						const ex = exerciseMap.get(exerciseId);
 						exerciseList.push({
 							exerciseName: ex?.name ?? `Exercício ${exerciseId.slice(0, 8)}…`,
-							muscleGroup: ex ? (MUSCLE_GROUP_LABELS[ex.muscleGroup] ?? ex.muscleGroup) : '—',
+							muscleGroup: ex?.muscleGroup ?? 'other',
 							sets: sets.sort((a, b) => a.setNumber - b.setNumber)
 						});
+						totalSets += sets.length;
 					}
-					result.push({ dateKey, label: dayLabel(dateKey), exercises: exerciseList });
+					result.push({ dateKey, label: dayLabel(dateKey), exercises: exerciseList, totalSets });
 				}
 
-				// dayMap já está em ordem de inserção (mais recente primeiro, pois logs é reverse()).
 				sessions = result;
 				loadState = 'ready';
 			} catch (err) {
@@ -142,92 +139,155 @@
 </svelte:head>
 
 {#if loadState === 'loading'}
-	<div class="space-y-6" aria-busy="true" aria-live="polite">
-		<div class="h-5 w-24 animate-pulse rounded bg-white/5"></div>
+	<div class="space-y-6 p-5" aria-busy="true" aria-live="polite">
+		<div class="skeleton h-4 w-24"></div>
+		<div class="skeleton h-8 w-48"></div>
 		{#each [0, 1, 2] as _}
 			<div class="space-y-3">
-				<div class="h-4 w-32 animate-pulse rounded bg-white/5"></div>
-				<div class="h-20 animate-pulse rounded-2xl bg-white/5"></div>
-			</div>
-		{/each}
-	</div>
-{:else if loadState === 'error'}
-	<div role="alert" class="rounded-2xl border border-red-500/30 bg-red-500/5 p-5 text-sm text-red-200">
-		<p class="font-semibold">Não foi possível carregar o histórico.</p>
-		{#if errorMessage}
-			<p class="mt-1 text-red-200/80">{errorMessage}</p>
-		{/if}
-	</div>
-{:else if sessions.length === 0}
-	<!-- Estado vazio -->
-	<section class="flex min-h-[60vh] flex-col items-center justify-center text-center">
-		<div
-			class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-white/5"
-			aria-hidden="true"
-		>
-			<svg
-				class="h-10 w-10 text-gray-400"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.5"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<circle cx="12" cy="12" r="9" />
-				<path d="M12 7v5l3 2" />
-			</svg>
-		</div>
-		<h2 class="text-lg font-semibold text-gray-100">Nenhum treino registrado ainda</h2>
-		<p class="mt-2 max-w-xs text-sm leading-relaxed text-gray-400">
-			Quando você registrar uma série na tela de treino, ela aparecerá aqui.
-		</p>
-	</section>
-{:else}
-	<section class="space-y-8">
-		<header>
-			<p class="text-xs font-medium tracking-wide text-gray-500 uppercase">Histórico</p>
-			<h2 class="mt-1 text-xl font-semibold text-gray-100">Seus treinos</h2>
-		</header>
-
-		{#each sessions as session (session.dateKey)}
-			<div class="space-y-3">
-				<!-- Cabeçalho do dia -->
-				<p class="text-xs font-semibold tracking-wide text-gray-500 uppercase">{session.label}</p>
-
-				<!-- Card de exercícios do dia -->
-				<div class="rounded-2xl border border-white/5 bg-white/[0.02] divide-y divide-white/5 overflow-hidden">
-					{#each session.exercises as entry (entry.exerciseName)}
-						<div class="p-4 space-y-2">
-							<!-- Nome + grupo muscular -->
-							<div class="flex items-baseline justify-between gap-2">
-								<span class="text-sm font-semibold text-gray-100 truncate">{entry.exerciseName}</span>
-								<span class="shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-[10px] font-medium text-gray-400">
-									{entry.muscleGroup}
-								</span>
-							</div>
-
-							<!-- Séries -->
-							<div class="flex flex-wrap gap-2">
-								{#each entry.sets as set (set.setNumber)}
-									<div
-										class="flex items-center gap-1 rounded-lg border border-white/5 bg-white/[0.03] px-2.5 py-1.5 text-xs"
-									>
-										<span class="font-medium text-gray-400">{set.setNumber}.</span>
-										<span class="font-semibold text-gray-100">{set.reps} reps</span>
-										<span class="text-gray-500">·</span>
-										<span class="font-semibold text-gray-100">{set.loadKg} kg</span>
-										{#if set.rpe !== undefined}
-											<span class="text-gray-500">·</span>
-											<span class="text-gray-400">RPE {set.rpe}</span>
-										{/if}
-									</div>
-								{/each}
-							</div>
-						</div>
-					{/each}
+				<div class="skeleton h-3.5 w-32"></div>
+				<div class="card p-4 space-y-3">
+					<div class="skeleton h-4 w-40"></div>
+					<div class="skeleton h-3 w-24"></div>
+					<div class="flex gap-2">
+						<div class="skeleton h-8 w-24 rounded-xl"></div>
+						<div class="skeleton h-8 w-24 rounded-xl"></div>
+					</div>
 				</div>
 			</div>
 		{/each}
+	</div>
+
+{:else if loadState === 'error'}
+	<div class="px-5 pt-6 animate-slide-up">
+		<div role="alert" class="rounded-2xl border border-gym-danger/20 bg-gym-danger/5 p-5 text-sm text-red-300">
+			<p class="font-semibold">Não foi possível carregar o histórico.</p>
+			{#if errorMessage}<p class="mt-1 text-red-300/70">{errorMessage}</p>{/if}
+		</div>
+	</div>
+
+{:else if sessions.length === 0}
+	<!-- Estado vazio -->
+	<section class="flex min-h-[75vh] flex-col items-center justify-center px-8 text-center animate-fade-in">
+		<div class="relative mb-8" aria-hidden="true">
+			<div class="absolute inset-0 rounded-full bg-gym-accent/10 blur-xl scale-125"></div>
+			<div class="relative flex h-28 w-28 items-center justify-center rounded-full
+				bg-gradient-to-br from-gym-accent/20 to-gym-accent-2/10
+				border border-gym-accent/20">
+				<svg class="h-14 w-14 text-gym-accent" viewBox="0 0 24 24" fill="none"
+					stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="9" />
+					<path d="M12 7v5l3 2" />
+				</svg>
+			</div>
+		</div>
+
+		<h1 class="text-[24px] font-black text-gym-text">Nenhum treino ainda</h1>
+		<p class="mt-3 max-w-xs text-[15px] leading-relaxed text-gym-muted">
+			Quando você registrar uma série na tela de treino, ela aparecerá aqui.
+		</p>
+
+		<a
+			href="/fichas"
+			class="mt-8 inline-flex items-center gap-2.5 rounded-2xl bg-gym-accent
+				px-8 py-4 text-[16px] font-bold text-white
+				transition-all active:scale-[0.97] shadow-lg shadow-gym-accent/25"
+		>
+			<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+				stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<path d="M6.5 6.5v11" />
+				<path d="M17.5 6.5v11" />
+				<path d="M3 9.5v5" />
+				<path d="M21 9.5v5" />
+				<path d="M6.5 12h11" />
+			</svg>
+			Ir para Fichas
+		</a>
 	</section>
+
+{:else}
+	<div class="animate-fade-in">
+		<!-- ── Header ─────────────────────────────────────────── -->
+		<div class="px-5 pt-5 pb-4">
+			<p class="section-label mb-1">Histórico</p>
+			<h1 class="text-[24px] font-black text-gym-text">Seus treinos</h1>
+			<p class="mt-1 text-[13px] text-gym-muted">
+				{totalSetsAll} {totalSetsAll === 1 ? 'série registrada' : 'séries registradas'}
+			</p>
+		</div>
+
+		<!-- ── Feed por dia ──────────────────────────────────── -->
+		<div class="space-y-6 px-4 pb-4">
+			{#each sessions as session (session.dateKey)}
+				<div class="space-y-2 animate-slide-up">
+					<!-- Cabeçalho do dia -->
+					<div class="flex items-center gap-3">
+						<span
+							class="rounded-xl px-3 py-1.5 text-[12px] font-black uppercase tracking-wide
+								{session.label === 'Hoje'
+									? 'bg-gym-accent/15 text-gym-accent'
+									: session.label === 'Ontem'
+										? 'bg-gym-surface2 border border-gym-border text-gym-muted'
+										: 'bg-gym-surface border border-gym-border text-gym-muted/70'}"
+						>
+							{session.label}
+						</span>
+						<span class="text-[12px] text-gym-muted">
+							{session.totalSets} {session.totalSets === 1 ? 'série' : 'séries'}
+						</span>
+					</div>
+
+					<!-- Card de exercícios do dia -->
+					<div class="card divide-y divide-gym-border overflow-hidden">
+						{#each session.exercises as entry (entry.exerciseName)}
+							<div class="p-4 space-y-3">
+								<!-- Nome + badge muscular -->
+								<div class="flex items-start justify-between gap-2">
+									<span class="text-[15px] font-bold text-gym-text leading-snug">
+										{entry.exerciseName}
+									</span>
+									<span
+										class="shrink-0 rounded-lg px-2.5 py-1 text-[11px] font-bold
+											whitespace-nowrap
+											{MUSCLE_COLORS[entry.muscleGroup] ?? 'bg-gym-surface text-gym-muted'}"
+									>
+										{MUSCLE_GROUP_LABELS[entry.muscleGroup] ?? entry.muscleGroup}
+									</span>
+								</div>
+
+								<!-- Chips de séries -->
+								<div class="flex flex-wrap gap-2">
+									{#each entry.sets as set (set.setNumber)}
+										<div
+											class="flex items-center gap-1.5 rounded-xl border border-gym-border
+												bg-gym-surface2 px-3 py-2"
+										>
+											<span class="text-[12px] font-bold text-gym-muted">
+												{set.setNumber}.
+											</span>
+											<span class="text-[13px] font-bold text-gym-text">
+												{set.reps} reps
+											</span>
+											<span class="text-gym-muted text-[12px]">·</span>
+											<span class="text-[13px] font-bold text-gym-text">
+												{set.loadKg} kg
+											</span>
+											{#if set.rpe !== undefined}
+												<span class="text-gym-muted text-[12px]">·</span>
+												<span
+													class="text-[12px] font-bold
+														{set.rpe >= 9 ? 'text-gym-amber' : 'text-gym-muted'}"
+												>
+													{set.rpe}
+												</span>
+											{/if}
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/each}
+		</div>
+	</div>
 {/if}

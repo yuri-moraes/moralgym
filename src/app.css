@@ -28,6 +28,8 @@
 			sans-serif;
 		-webkit-font-smoothing: antialiased;
 		-moz-osx-font-smoothing: grayscale;
+		background-color: #0B0B0D;
+		color: #F1F1F5;
 	}
 
 	/*
@@ -35,9 +37,9 @@
 	 * mantemos foco visível para acessibilidade via teclado.
 	 */
 	:focus-visible {
-		outline: 2px solid #6366f1;
+		outline: 2px solid #7C6FF7;
 		outline-offset: 2px;
-		border-radius: 4px;
+		border-radius: 6px;
 	}
 
 	/* Reset de aparência nativa em inputs numéricos (peso/reps). */
@@ -50,6 +52,105 @@
 		-moz-appearance: textfield;
 		appearance: textfield;
 	}
+
+	/* Range slider personalizado */
+	input[type='range'] {
+		-webkit-appearance: none;
+		appearance: none;
+		height: 6px;
+		border-radius: 9999px;
+		background: #26262F;
+		cursor: pointer;
+	}
+	input[type='range']::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		background: #7C6FF7;
+		border: 2px solid #F1F1F5;
+		box-shadow: 0 0 0 4px rgba(124, 111, 247, 0.2);
+		cursor: pointer;
+	}
+	input[type='range']::-moz-range-thumb {
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		background: #7C6FF7;
+		border: 2px solid #F1F1F5;
+		box-shadow: 0 0 0 4px rgba(124, 111, 247, 0.2);
+		cursor: pointer;
+	}
+	input[type='range']::-webkit-slider-runnable-track {
+		border-radius: 9999px;
+	}
+
+	/* Scrollbar sutil */
+	::-webkit-scrollbar {
+		width: 4px;
+		height: 4px;
+	}
+	::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	::-webkit-scrollbar-thumb {
+		background: #35353F;
+		border-radius: 9999px;
+	}
+}
+
+@layer components {
+	/* ── Input base ──────────────────────────────────────────── */
+	.input-base {
+		@apply w-full rounded-2xl border border-gym-border bg-gym-surface px-4 py-3.5
+			text-[15px] text-gym-text placeholder:text-gym-muted/50
+			outline-none transition-all duration-200
+			focus:border-gym-accent focus:ring-2 focus:ring-gym-accent/20;
+	}
+
+	/* ── Botão primário ──────────────────────────────────────── */
+	.btn-primary {
+		@apply inline-flex w-full items-center justify-center gap-2.5
+			rounded-2xl bg-gym-accent px-6 py-4
+			text-[16px] font-bold text-white
+			transition-all duration-150
+			active:scale-[0.97] active:brightness-90
+			disabled:cursor-not-allowed disabled:opacity-40;
+	}
+
+	/* ── Botão ghost (outline) ───────────────────────────────── */
+	.btn-ghost {
+		@apply inline-flex items-center justify-center gap-2
+			rounded-2xl border border-gym-border px-5 py-3.5
+			text-[15px] font-semibold text-gym-text
+			transition-all duration-150
+			active:bg-gym-surface2 active:scale-[0.98];
+	}
+
+	/* ── Card base ───────────────────────────────────────────── */
+	.card {
+		@apply rounded-2xl border border-gym-border bg-gym-surface;
+	}
+
+	/* ── Skeleton shimmer ────────────────────────────────────── */
+	.skeleton {
+		@apply rounded-xl bg-gym-surface;
+		background-image: linear-gradient(90deg, #111115 0%, #1A1A21 50%, #111115 100%);
+		background-size: 200% 100%;
+		animation: shimmer 1.8s linear infinite;
+	}
+
+	/* ── Badge de grupo muscular ─────────────────────────────── */
+	.muscle-badge {
+		@apply rounded-full bg-gym-accent/10 px-2.5 py-0.5
+			text-[11px] font-semibold uppercase tracking-wide text-gym-accent;
+	}
+
+	/* ── Section label ───────────────────────────────────────── */
+	.section-label {
+		@apply text-[11px] font-bold uppercase tracking-widest text-gym-muted;
+	}
 }
 
 @layer utilities {
@@ -59,5 +160,26 @@
 	}
 	.safe-bottom {
 		padding-bottom: env(safe-area-inset-bottom);
+	}
+
+	/* Gradiente de texto */
+	.text-gradient {
+		background: linear-gradient(135deg, #7C6FF7 0%, #A78BFA 100%);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+	}
+
+	/* Glassy surface */
+	.glass {
+		background: rgba(17, 17, 21, 0.85);
+		backdrop-filter: blur(16px);
+		-webkit-backdrop-filter: blur(16px);
+	}
+
+	/* Borda com gradiente */
+	.border-gradient {
+		border: 1px solid transparent;
+		background-clip: padding-box;
 	}
 }
