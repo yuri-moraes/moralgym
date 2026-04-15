@@ -1,15 +1,12 @@
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-vercel';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /**
  * MoralGym — PWA Local-First.
  *
- * Estratégia de build: SSG puro com fallback SPA.
- *   - `adapter-static` gera artefatos 100% estáticos (pode hospedar em qualquer
- *     CDN / GitHub Pages / Netlify free-tier).
- *   - `fallback: 'index.html'` instrui o adapter a emitir um index.html que faz
- *     client-side routing para qualquer rota não pré-renderizada. É o que
- *     permite deep-links funcionarem offline depois do primeiro load.
+ * Estratégia de build: SPA com Vercel adapter.
+ *   - `adapter-vercel` é otimizado para a plataforma Vercel, evita conflitos
+ *     de configuração que causam página branca com `adapter-static`.
  *   - SSR é desligado globalmente (ver `src/routes/+layout.ts`) porque o app
  *     depende de APIs de browser: IndexedDB, Web Worker, Notification, Canvas.
  *   - O service worker do `vite-plugin-pwa` faz precache do build (incluindo
@@ -21,13 +18,7 @@ const config = {
 	preprocess: vitePreprocess(),
 
 	kit: {
-		adapter: adapter({
-			pages: 'build',
-			assets: 'build',
-			fallback: 'index.html',
-			precompress: true,
-			strict: true
-		}),
+		adapter: adapter(),
 
 		// Pure SPA: nada é prerenderizado. Toda navegação acontece client-side.
 		prerender: { entries: [] },
