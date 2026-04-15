@@ -4,20 +4,18 @@
 	import type { Routine } from '$core/domain/entities/Routine';
 	import type { Split } from '$core/domain/entities/Split';
 
-	type LoadState = 'idle' | 'loading' | 'ready' | 'error';
+	type LoadState = 'loading' | 'ready' | 'error';
 
 	let state = $state<LoadState>('loading');
 	let routine = $state<Routine | null>(null);
 	let splits = $state<readonly Split[]>([]);
 	let errorMessage = $state<string | null>(null);
 
-	// Splits ordenados por orderIndex; o repo não promete ordem estável.
 	let orderedSplits = $derived(
 		[...splits].sort((a, b) => a.orderIndex - b.orderIndex)
 	);
 
 	onMount(() => {
-		// IIFE async: onMount não pode ser async sem perder a função de cleanup.
 		(async () => {
 			try {
 				const { routines } = getContainer();
@@ -26,9 +24,8 @@
 				splits = active ? await routines.findSplits(active.id) : [];
 				state = 'ready';
 			} catch (err) {
-				console.error('[home] Falha ao carregar rotina ativa', err);
-				errorMessage =
-					err instanceof Error ? err.message : 'Erro desconhecido ao carregar dados.';
+				console.error('[fichas] Falha ao carregar rotina ativa', err);
+				errorMessage = err instanceof Error ? err.message : 'Erro desconhecido.';
 				state = 'error';
 			}
 		})();
@@ -40,33 +37,52 @@
 </svelte:head>
 
 {#if state === 'loading'}
-	<!-- Skeleton minimalista: evita CLS quando a Routine resolve. -->
-	<div class="space-y-4" aria-busy="true" aria-live="polite">
-		<div class="h-7 w-2/3 animate-pulse rounded bg-white/5"></div>
-		<div class="h-24 animate-pulse rounded-2xl bg-white/5"></div>
-		<div class="h-24 animate-pulse rounded-2xl bg-white/5"></div>
+	<!-- ── Skeleton ───────────────────────────────────────────── -->
+	<div class="divide-y divide-[#2F3336]" aria-busy="true" aria-live="polite">
+		<!-- "Ficha ativa" header skeleton -->
+		<div class="px-4 py-4">
+			<div class="h-3.5 w-20 animate-pulse rounded-full bg-[#2F3336]"></div>
+			<div class="mt-2 h-5 w-44 animate-pulse rounded-full bg-[#2F3336]"></div>
+		</div>
+		<!-- Split skeletons -->
+		{#each [0, 1, 2] as _}
+			<div class="flex items-center gap-4 px-4 py-4">
+				<div class="h-12 w-12 shrink-0 animate-pulse rounded-2xl bg-[#2F3336]"></div>
+				<div class="flex-1 space-y-2">
+					<div class="h-4 w-32 animate-pulse rounded-full bg-[#2F3336]"></div>
+					<div class="h-3 w-20 animate-pulse rounded-full bg-[#2F3336]"></div>
+				</div>
+			</div>
+		{/each}
 	</div>
+
 {:else if state === 'error'}
-	<div
-		role="alert"
-		class="rounded-2xl border border-red-500/30 bg-red-500/5 p-5 text-sm text-red-200"
-	>
-		<p class="font-semibold">Não foi possível carregar suas fichas.</p>
-		{#if errorMessage}
-			<p class="mt-1 text-red-200/80">{errorMessage}</p>
-		{/if}
-	</div>
-{:else if !routine}
-	<!-- Empty state convidativo. CTA primário ocupa a largura total no mobile. -->
-	<section
-		class="flex min-h-[60vh] flex-col items-center justify-center text-center"
-	>
+	<div class="px-4 pt-6">
 		<div
-			class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-white/5"
+			role="alert"
+			class="rounded-2xl border border-red-500/20 bg-red-500/5 p-5 text-sm text-red-300"
+		>
+			<p class="font-semibold">Não foi possível carregar suas fichas.</p>
+			{#if errorMessage}
+				<p class="mt-1 text-red-300/70">{errorMessage}</p>
+			{/if}
+		</div>
+	</div>
+
+{:else if !routine}
+	<!-- ── Empty State ─────────────────────────────────────────── -->
+	<section
+		class="flex min-h-[70vh] flex-col items-center justify-center px-8 text-center"
+		aria-label="Nenhuma ficha cadastrada"
+	>
+		<!-- Ícone de halter estilizado -->
+		<div
+			class="mb-8 flex h-24 w-24 items-center justify-center rounded-full
+				border border-[#2F3336] bg-[#15161A]"
 			aria-hidden="true"
 		>
 			<svg
-				class="h-10 w-10 text-gray-400"
+				class="h-12 w-12 text-[#71767B]"
 				viewBox="0 0 24 24"
 				fill="none"
 				stroke="currentColor"
@@ -82,84 +98,130 @@
 			</svg>
 		</div>
 
-		<h2 class="text-lg font-semibold text-gray-100">
-			Nenhuma ficha de treino ativa
+		<h2 class="text-[22px] font-bold text-[#E7E9EA]">
+			Crie sua primeira ficha
 		</h2>
-		<p class="mt-2 max-w-xs text-sm leading-relaxed text-gray-400">
-			Crie sua primeira ficha para começar a registrar treinos. Você pode
-			organizar por divisão (A/B/C…) ou treino único.
+		<p class="mt-3 max-w-xs text-[15px] leading-relaxed text-[#71767B]">
+			Organize seus treinos por divisão — A/B, Push/Pull/Legs ou o que funcionar para você.
 		</p>
 
 		<a
 			href="/fichas/nova"
-			class="mt-8 inline-flex w-full max-w-xs items-center justify-center rounded-xl
-				bg-gray-100 px-5 py-3 text-sm font-semibold text-[#0B0B0D]
-				transition-colors active:bg-gray-300"
+			class="mt-8 inline-flex items-center justify-center rounded-full
+				bg-[#E7E9EA] px-8 py-3.5 text-[15px] font-bold text-[#0B0B0D]
+				transition-all duration-150 active:scale-95 active:bg-white"
 		>
-			Criar nova ficha
+			Criar ficha
 		</a>
 	</section>
+
 {:else}
-	<section class="space-y-5">
-		<header>
-			<p class="text-xs font-medium tracking-wide text-gray-500 uppercase">
-				Ficha ativa
-			</p>
-			<h2 class="mt-1 text-xl font-semibold text-gray-100">{routine.name}</h2>
-			{#if routine.description}
-				<p class="mt-1 text-sm text-gray-400">{routine.description}</p>
-			{/if}
-		</header>
+	<!-- ── Feed de Fichas ──────────────────────────────────────── -->
+	<div class="divide-y divide-[#2F3336]">
 
+		<!-- Cabeçalho da ficha ativa -->
+		<div class="flex items-start justify-between px-4 py-4">
+			<div class="min-w-0 flex-1">
+				<p class="text-[13px] font-medium text-[#71767B]">Ficha ativa</p>
+				<h2 class="mt-0.5 truncate text-[20px] font-bold text-[#E7E9EA]">
+					{routine.name}
+				</h2>
+				{#if routine.description}
+					<p class="mt-1 line-clamp-2 text-[14px] leading-relaxed text-[#71767B]">
+						{routine.description}
+					</p>
+				{/if}
+			</div>
+
+			<!-- Botão "Nova ficha" compacto no canto -->
+			<a
+				href="/fichas/nova"
+				class="ml-4 shrink-0 rounded-full border border-[#2F3336] px-4 py-2
+					text-[13px] font-bold text-[#E7E9EA] transition-colors
+					active:bg-[#2F3336]"
+				aria-label="Criar nova ficha"
+			>
+				+ Nova
+			</a>
+		</div>
+
+		<!-- Lista de splits estilo "posts" do X ───────────────── -->
 		{#if orderedSplits.length === 0}
-			<p class="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-sm text-gray-400">
-				Esta ficha ainda não tem dias de treino cadastrados.
-			</p>
+			<div class="px-4 py-8 text-center">
+				<p class="text-[14px] text-[#71767B]">
+					Esta ficha ainda não tem dias de treino.
+				</p>
+			</div>
 		{:else}
-			<ul class="grid gap-3 sm:grid-cols-2">
-				{#each orderedSplits as split (split.id)}
-					<li>
-						<a
-							href={`/fichas/${routine.id}/${split.id}`}
-							class="group flex h-full items-center gap-4 rounded-2xl border border-white/5
-								bg-white/[0.02] p-4 transition-colors
-								hover:border-white/10 hover:bg-white/[0.04]
-								active:bg-white/[0.06]"
-						>
-							<span
-								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl
-									bg-white/5 text-base font-bold text-gray-100"
-								aria-hidden="true"
-							>
-								{split.label}
-							</span>
+			{#each orderedSplits as split (split.id)}
+				<a
+					href="/fichas/{routine.id}/{split.id}"
+					class="group flex w-full items-center gap-4 px-4 py-4
+						transition-colors duration-150 hover:bg-[#15161A]/60
+						active:bg-[#15161A]"
+					aria-label="Abrir {split.name ?? `Treino ${split.label}`}"
+				>
+					<!-- Badge da letra do split -->
+					<span
+						class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl
+							bg-[#15161A] border border-[#2F3336]
+							text-[16px] font-black text-[#E7E9EA]"
+						aria-hidden="true"
+					>
+						{split.label}
+					</span>
 
-							<span class="flex min-w-0 flex-1 flex-col">
-								<span class="truncate text-sm font-semibold text-gray-100">
-									{split.name ?? `Treino ${split.label}`}
-								</span>
-								<span class="mt-0.5 text-xs text-gray-500">
-									{split.exercises.length}
-									{split.exercises.length === 1 ? 'exercício' : 'exercícios'}
-								</span>
-							</span>
+					<!-- Dados do split -->
+					<div class="min-w-0 flex-1">
+						<p class="truncate text-[16px] font-bold text-[#E7E9EA]">
+							{split.name ?? `Treino ${split.label}`}
+						</p>
+						<p class="mt-0.5 text-[13px] text-[#71767B]">
+							{split.exercises.length}
+							{split.exercises.length === 1 ? 'exercício' : 'exercícios'}
+						</p>
+					</div>
 
-							<svg
-								class="h-5 w-5 shrink-0 text-gray-500 transition-transform group-hover:translate-x-0.5"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="1.75"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								aria-hidden="true"
-							>
-								<path d="M9 6l6 6-6 6" />
-							</svg>
-						</a>
-					</li>
-				{/each}
-			</ul>
+					<!-- Chevron -->
+					<svg
+						class="h-5 w-5 shrink-0 text-[#71767B] transition-transform duration-150
+							group-hover:translate-x-0.5"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="M9 6l6 6-6 6" />
+					</svg>
+				</a>
+			{/each}
 		{/if}
-	</section>
+
+		<!-- Rodapé com CTA de nova ficha (quando já tem uma ativa) -->
+		<div class="px-4 py-5">
+			<a
+				href="/fichas/nova"
+				class="flex items-center justify-center gap-2 rounded-full
+					border border-[#2F3336] py-3.5 text-[15px] font-bold text-[#E7E9EA]
+					transition-colors active:bg-[#15161A]"
+			>
+				<svg
+					class="h-5 w-5"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<path d="M12 5v14M5 12h14" />
+				</svg>
+				Nova ficha
+			</a>
+		</div>
+	</div>
 {/if}
