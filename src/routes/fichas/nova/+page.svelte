@@ -112,16 +112,21 @@
 		</div>
 
 		<div class="space-y-2">
-			<label for="routine-description" class="block text-xs font-medium text-gray-300">
-				Descrição <span class="text-gray-500">(opcional)</span>
-			</label>
+			<div class="flex items-baseline justify-between">
+				<label for="routine-description" class="block text-xs font-medium text-gray-300">
+					Descrição <span class="text-gray-500">(opcional)</span>
+				</label>
+				<span class="text-[11px] text-gray-600" aria-live="polite">
+					{description.length}/3000
+				</span>
+			</div>
 			<textarea
 				id="routine-description"
-				rows="2"
-				maxlength="240"
+				rows="10"
+				maxlength="3000"
 				bind:value={description}
-				placeholder="Foco, período, meta..."
-				class="w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-gray-100
+				placeholder="Foco, período, meta, instruções de execução, progressão de carga..."
+				class="w-full resize-y rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-gray-100
 					placeholder:text-gray-600 outline-none transition-colors
 					focus:border-white/30 focus:bg-white/[0.05]"
 			></textarea>
