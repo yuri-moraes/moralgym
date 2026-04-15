@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import type { Snippet } from 'svelte';
+	import "../app.css";
+	import { page } from "$app/stores";
+	import type { Snippet } from "svelte";
 
 	interface Props {
 		children: Snippet;
@@ -11,8 +12,8 @@
 	// Itens da Bottom Navigation. Mantido inline (2 itens) — abstrair em
 	// componente só quando crescer para 4+ abas.
 	const navItems = [
-		{ href: '/fichas', label: 'Fichas', icon: 'dumbbell' },
-		{ href: '/historico', label: 'Histórico', icon: 'clock' }
+		{ href: "/fichas", label: "Fichas", icon: "dumbbell" },
+		{ href: "/historico", label: "Histórico", icon: "clock" },
 	] as const;
 
 	// "Ativo" cobre tanto a rota exata quanto sub-rotas (ex.: /fichas/123).
@@ -51,11 +52,11 @@
 				<li class="flex-1">
 					<a
 						href={item.href}
-						aria-current={active ? 'page' : undefined}
+						aria-current={active ? "page" : undefined}
 						class="flex flex-col items-center gap-1 px-4 py-3 text-xs font-medium transition-colors
 							{active ? 'text-gray-50' : 'text-gray-500 hover:text-gray-300'}"
 					>
-						{#if item.icon === 'dumbbell'}
+						{#if item.icon === "dumbbell"}
 							<svg
 								class="h-6 w-6"
 								viewBox="0 0 24 24"

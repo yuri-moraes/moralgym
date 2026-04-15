@@ -23,6 +23,7 @@ import type { ExerciseRepository } from '../core/application/ports/repositories/
 import type { RoutineRepository } from '../core/application/ports/repositories/RoutineRepository';
 import type { WorkoutLogRepository } from '../core/application/ports/repositories/WorkoutLogRepository';
 
+import { CreateRoutineUseCase } from '../core/application/use-cases/CreateRoutineUseCase';
 import { LogSetUseCase } from '../core/application/use-cases/LogSetUseCase';
 import { StartRestTimerUseCase } from '../core/application/use-cases/StartRestTimerUseCase';
 
@@ -40,6 +41,7 @@ export interface AppContainer {
 	// Casos de uso prontos para a UI consumir
 	readonly startRestTimer: StartRestTimerUseCase;
 	readonly logSet: LogSetUseCase;
+	readonly createRoutine: CreateRoutineUseCase;
 }
 
 let instance: AppContainer | null = null;
@@ -57,6 +59,7 @@ export function getContainer(): AppContainer {
 
 	const startRestTimer = new StartRestTimerUseCase({ restTimer, notifications });
 	const logSet = new LogSetUseCase({ workoutLogs, startRestTimer });
+	const createRoutine = new CreateRoutineUseCase({ routines });
 
 	instance = {
 		exercises,
@@ -66,7 +69,8 @@ export function getContainer(): AppContainer {
 		restTimer,
 		notifications,
 		startRestTimer,
-		logSet
+		logSet,
+		createRoutine
 	};
 	return instance;
 }

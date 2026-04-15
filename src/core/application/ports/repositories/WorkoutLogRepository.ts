@@ -11,6 +11,7 @@ export interface DateRange {
  */
 export interface WorkoutLogRepository {
 	findById(id: string): Promise<WorkoutLog | null>;
+	findAll(limit?: number): Promise<readonly WorkoutLog[]>;
 	findByExercise(exerciseId: string, range?: DateRange): Promise<readonly WorkoutLog[]>;
 	findBySplit(splitId: string, range?: DateRange): Promise<readonly WorkoutLog[]>;
 	findLastSession(exerciseId: string): Promise<readonly WorkoutLog[]>;

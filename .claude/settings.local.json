@@ -3,7 +3,8 @@
     "allow": [
       "Bash(curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o /home/yurin/moralgym/LICENSE)",
       "Bash(ls /home/yurin/moralgym/src/*.css /home/yurin/moralgym/src/*.html)",
-      "Bash(npx vitest *)"
+      "Bash(npx vitest *)",
+      "Bash(ls /home/yurin/moralgym/*.config.*)"
     ]
   }
 }

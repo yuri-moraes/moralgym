@@ -20,6 +20,15 @@ export class DexieWorkoutLogRepository implements WorkoutLogRepository {
 		return record ? recordToLog(record) : null;
 	}
 
+	async findAll(limit = 500): Promise<readonly WorkoutLog[]> {
+		const records = await this.db.workoutLogs
+			.orderBy('performedAt')
+			.reverse()
+			.limit(limit)
+			.toArray();
+		return records.map(recordToLog);
+	}
+
 	async findByExercise(
 		exerciseId: string,
 		range?: DateRange
