@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { getContainer } from '$lib/container';
+	import PageLoadingSkeleton from '$ui/components/shared/PageLoadingSkeleton.svelte';
+	import ErrorAlert from '$ui/components/shared/ErrorAlert.svelte';
+	import EmptyState from '$ui/components/shared/EmptyState.svelte';
+	import DaySessionCard from '$ui/components/historico/DaySessionCard.svelte';
 	import type { Exercise } from '$core/domain/entities/Exercise';
 
 	type LoadState = 'loading' | 'ready' | 'error';
@@ -139,70 +143,32 @@
 </svelte:head>
 
 {#if loadState === 'loading'}
-	<div class="space-y-6 p-5" aria-busy="true" aria-live="polite">
-		<div class="skeleton h-4 w-24"></div>
-		<div class="skeleton h-8 w-48"></div>
-		{#each [0, 1, 2] as _}
-			<div class="space-y-3">
-				<div class="skeleton h-3.5 w-32"></div>
-				<div class="card p-4 space-y-3">
-					<div class="skeleton h-4 w-40"></div>
-					<div class="skeleton h-3 w-24"></div>
-					<div class="flex gap-2">
-						<div class="skeleton h-8 w-24 rounded-xl"></div>
-						<div class="skeleton h-8 w-24 rounded-xl"></div>
-					</div>
-				</div>
-			</div>
-		{/each}
-	</div>
+	<PageLoadingSkeleton rows={3} />
 
 {:else if loadState === 'error'}
-	<div class="px-5 pt-6 animate-slide-up">
-		<div role="alert" class="rounded-2xl border border-gym-danger/20 bg-gym-danger/5 p-5 text-sm text-red-300">
-			<p class="font-semibold">Não foi possível carregar o histórico.</p>
-			{#if errorMessage}<p class="mt-1 text-red-300/70">{errorMessage}</p>{/if}
-		</div>
-	</div>
+	<ErrorAlert message="Não foi possível carregar o histórico." detail={errorMessage} />
 
 {:else if sessions.length === 0}
-	<!-- Estado vazio -->
-	<section class="flex min-h-[75vh] flex-col items-center justify-center px-8 text-center animate-fade-in">
-		<div class="relative mb-8" aria-hidden="true">
-			<div class="absolute inset-0 rounded-full bg-gym-accent/10 blur-xl scale-125"></div>
-			<div class="relative flex h-28 w-28 items-center justify-center rounded-full
-				bg-gradient-to-br from-gym-accent/20 to-gym-accent-2/10
-				border border-gym-accent/20">
-				<svg class="h-14 w-14 text-gym-accent" viewBox="0 0 24 24" fill="none"
-					stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-					<circle cx="12" cy="12" r="9" />
-					<path d="M12 7v5l3 2" />
-				</svg>
-			</div>
-		</div>
-
-		<h1 class="text-[24px] font-black text-gym-text">Nenhum treino ainda</h1>
-		<p class="mt-3 max-w-xs text-[15px] leading-relaxed text-gym-muted">
-			Quando você registrar uma série na tela de treino, ela aparecerá aqui.
-		</p>
-
-		<a
-			href="/fichas"
-			class="mt-8 inline-flex items-center gap-2.5 rounded-2xl bg-gym-accent
-				px-8 py-4 text-[16px] font-bold text-white
-				transition-all active:scale-[0.97] shadow-lg shadow-gym-accent/25"
+	<EmptyState
+		title="Nenhum treino ainda"
+		description="Quando você registrar uma série na tela de treino, ela aparecerá aqui."
+		ctaHref="/fichas"
+		ctaLabel="Ir para Fichas"
+	>
+		<svg
+			class="h-14 w-14 text-gym-accent"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.5"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+			slot="icon"
 		>
-			<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-				stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-				<path d="M6.5 6.5v11" />
-				<path d="M17.5 6.5v11" />
-				<path d="M3 9.5v5" />
-				<path d="M21 9.5v5" />
-				<path d="M6.5 12h11" />
-			</svg>
-			Ir para Fichas
-		</a>
-	</section>
+			<circle cx="12" cy="12" r="9" />
+			<path d="M12 7v5l3 2" />
+		</svg>
+	</EmptyState>
 
 {:else}
 	<div class="animate-fade-in">
@@ -218,75 +184,11 @@
 		<!-- ── Feed por dia ──────────────────────────────────── -->
 		<div class="space-y-6 px-4 pb-4">
 			{#each sessions as session (session.dateKey)}
-				<div class="space-y-2 animate-slide-up">
-					<!-- Cabeçalho do dia -->
-					<div class="flex items-center gap-3">
-						<span
-							class="rounded-xl px-3 py-1.5 text-[12px] font-black uppercase tracking-wide
-								{session.label === 'Hoje'
-									? 'bg-gym-accent/15 text-gym-accent'
-									: session.label === 'Ontem'
-										? 'bg-gym-surface2 border border-gym-border text-gym-muted'
-										: 'bg-gym-surface border border-gym-border text-gym-muted/70'}"
-						>
-							{session.label}
-						</span>
-						<span class="text-[12px] text-gym-muted">
-							{session.totalSets} {session.totalSets === 1 ? 'série' : 'séries'}
-						</span>
-					</div>
-
-					<!-- Card de exercícios do dia -->
-					<div class="card divide-y divide-gym-border overflow-hidden">
-						{#each session.exercises as entry (entry.exerciseName)}
-							<div class="p-4 space-y-3">
-								<!-- Nome + badge muscular -->
-								<div class="flex items-start justify-between gap-2">
-									<span class="text-[15px] font-bold text-gym-text leading-snug">
-										{entry.exerciseName}
-									</span>
-									<span
-										class="shrink-0 rounded-lg px-2.5 py-1 text-[11px] font-bold
-											whitespace-nowrap
-											{MUSCLE_COLORS[entry.muscleGroup] ?? 'bg-gym-surface text-gym-muted'}"
-									>
-										{MUSCLE_GROUP_LABELS[entry.muscleGroup] ?? entry.muscleGroup}
-									</span>
-								</div>
-
-								<!-- Chips de séries -->
-								<div class="flex flex-wrap gap-2">
-									{#each entry.sets as set (set.setNumber)}
-										<div
-											class="flex items-center gap-1.5 rounded-xl border border-gym-border
-												bg-gym-surface2 px-3 py-2"
-										>
-											<span class="text-[12px] font-bold text-gym-muted">
-												{set.setNumber}.
-											</span>
-											<span class="text-[13px] font-bold text-gym-text">
-												{set.reps} reps
-											</span>
-											<span class="text-gym-muted text-[12px]">·</span>
-											<span class="text-[13px] font-bold text-gym-text">
-												{set.loadKg} kg
-											</span>
-											{#if set.rpe !== undefined}
-												<span class="text-gym-muted text-[12px]">·</span>
-												<span
-													class="text-[12px] font-bold
-														{set.rpe >= 9 ? 'text-gym-amber' : 'text-gym-muted'}"
-												>
-													{set.rpe}
-												</span>
-											{/if}
-										</div>
-									{/each}
-								</div>
-							</div>
-						{/each}
-					</div>
-				</div>
+				<DaySessionCard
+					{session}
+					muscleColors={MUSCLE_COLORS}
+					muscleGroupLabels={MUSCLE_GROUP_LABELS}
+				/>
 			{/each}
 		</div>
 	</div>

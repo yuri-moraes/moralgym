@@ -4,6 +4,13 @@
 	import { page } from '$app/stores';
 	import { getContainer } from '$lib/container';
 	import { MUSCLE_GROUPS } from '$core/domain/value-objects/MuscleGroup';
+	import PageLoadingSkeleton from '$ui/components/shared/PageLoadingSkeleton.svelte';
+	import ErrorAlert from '$ui/components/shared/ErrorAlert.svelte';
+	import BackButton from '$ui/components/shared/BackButton.svelte';
+	import SpinnerButton from '$ui/components/shared/SpinnerButton.svelte';
+	import ExerciseSearchBox from '$ui/components/exercicio/ExerciseSearchBox.svelte';
+	import MuscleGroupPicker from '$ui/components/exercicio/MuscleGroupPicker.svelte';
+	import PrescriptionFields from '$ui/components/exercicio/PrescriptionFields.svelte';
 	import type { MuscleGroup } from '$core/domain/value-objects/MuscleGroup';
 	import type { Routine } from '$core/domain/entities/Routine';
 	import type { Split } from '$core/domain/entities/Split';
@@ -174,21 +181,10 @@
 </svelte:head>
 
 {#if loadState === 'loading'}
-	<div class="space-y-4 p-5" aria-busy="true" aria-live="polite">
-		<div class="skeleton h-4 w-24"></div>
-		<div class="skeleton h-7 w-48 mt-2"></div>
-		{#each [0, 1, 2] as _}
-			<div class="skeleton h-14 rounded-2xl"></div>
-		{/each}
-	</div>
+	<PageLoadingSkeleton rows={2} />
 
 {:else if loadState === 'error'}
-	<div class="px-5 pt-6 animate-slide-up">
-		<div role="alert" class="rounded-2xl border border-gym-danger/20 bg-gym-danger/5 p-5 text-sm text-red-300">
-			<p class="font-semibold">Não foi possível carregar este treino.</p>
-			{#if loadError}<p class="mt-1 text-red-300/70">{loadError}</p>{/if}
-		</div>
-	</div>
+	<ErrorAlert message="Não foi possível carregar este treino." detail={loadError} />
 
 {:else if loadState === 'not-found' || !routine || !split}
 	<section class="flex min-h-[60vh] flex-col items-center justify-center px-8 text-center animate-fade-in">
@@ -201,18 +197,7 @@
 	<div class="animate-slide-up">
 		<!-- ── Header ───────────────────────────────────────────── -->
 		<div class="flex items-center gap-3 px-5 pt-5 pb-2">
-			<a
-				href="/fichas/{routine.id}/{split.id}"
-				class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl
-					border border-gym-border bg-gym-surface text-gym-muted
-					transition-all active:bg-gym-surface2 active:scale-95"
-				aria-label="Voltar para o treino"
-			>
-				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-					stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<path d="M15 6l-6 6 6 6" />
-				</svg>
-			</a>
+			<BackButton href="/fichas/{routine.id}/{split.id}" label="Voltar para o treino" />
 			<div class="min-w-0 flex-1">
 				<p class="section-label truncate">{split.name ?? `Treino ${split.label}`}</p>
 				<h1 class="text-[20px] font-black text-gym-text">Novo exercício</h1>
@@ -223,107 +208,15 @@
 		<form class="space-y-6 px-5 pt-4 pb-6" novalidate onsubmit={handleSubmit}>
 
 			<!-- Busca de exercícios -->
-			{#if !selectedExercise}
-				<div class="space-y-2">
-					<p class="section-label">Buscar no catálogo</p>
-					<label
-						for="exercise-search"
-						class="flex items-center gap-3 rounded-2xl border border-gym-border
-							bg-gym-surface px-4 py-3.5 transition-all
-							focus-within:border-gym-accent focus-within:ring-2 focus-within:ring-gym-accent/20"
-					>
-						<svg class="h-5 w-5 shrink-0 text-gym-muted" viewBox="0 0 24 24" fill="none"
-							stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
-							stroke-linejoin="round" aria-hidden="true">
-							<circle cx="11" cy="11" r="8" />
-							<path d="M21 21l-4.35-4.35" />
-						</svg>
-						<input
-							id="exercise-search"
-							type="text"
-							autocomplete="off"
-							bind:value={searchQuery}
-							placeholder="Ex.: Supino, Agachamento..."
-							class="min-w-0 flex-1 bg-transparent text-[15px] text-gym-text
-								placeholder:text-gym-muted/50 outline-none"
-						/>
-						{#if searchQuery}
-							<button
-								type="button"
-								onclick={() => (searchQuery = '')}
-								class="shrink-0 text-gym-muted active:text-gym-text"
-								aria-label="Limpar busca"
-							>
-								<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-									stroke="currentColor" stroke-width="2" stroke-linecap="round"
-									stroke-linejoin="round" aria-hidden="true">
-									<path d="M18 6L6 18M6 6l12 12" />
-								</svg>
-							</button>
-						{/if}
-					</label>
-
-					{#if filteredExercises.length > 0}
-						<ul class="card divide-y divide-gym-border overflow-hidden animate-slide-down">
-							{#each filteredExercises as ex (ex.id)}
-								<li>
-									<button
-										type="button"
-										onclick={() => selectExercise(ex)}
-										class="flex w-full items-center justify-between px-4 py-3.5
-											text-left transition-colors active:bg-gym-surface2"
-									>
-										<span class="text-[15px] font-semibold text-gym-text">{ex.name}</span>
-										<span class="muscle-badge ml-3 shrink-0">
-											{MUSCLE_GROUP_LABELS[ex.muscleGroup]}
-										</span>
-									</button>
-								</li>
-							{/each}
-						</ul>
-					{:else if searchQuery.trim().length >= 2}
-						<p class="text-[13px] text-gym-muted pt-1">
-							Nenhum resultado. Preencha abaixo para criar um novo.
-						</p>
-					{/if}
-				</div>
-			{/if}
-
-			<!-- Exercício selecionado do catálogo -->
-			{#if selectedExercise}
-				<div
-					class="flex items-center gap-3 rounded-2xl border border-gym-accent/30
-						bg-gym-accent/5 px-4 py-3.5 animate-slide-down"
-				>
-					<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl
-						bg-gym-accent/20">
-						<svg class="h-5 w-5 text-gym-accent" viewBox="0 0 24 24" fill="none"
-							stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-							stroke-linejoin="round" aria-hidden="true">
-							<path d="M20 6L9 17l-5-5" />
-						</svg>
-					</div>
-					<div class="min-w-0 flex-1">
-						<p class="truncate text-[15px] font-bold text-gym-text">{selectedExercise.name}</p>
-						<p class="text-[13px] text-gym-muted">
-							{MUSCLE_GROUP_LABELS[selectedExercise.muscleGroup]} · do catálogo
-						</p>
-					</div>
-					<button
-						type="button"
-						onclick={clearSelection}
-						class="shrink-0 flex h-8 w-8 items-center justify-center rounded-xl
-							text-gym-muted transition-colors active:bg-gym-surface2"
-						aria-label="Remover seleção"
-					>
-						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-							stroke="currentColor" stroke-width="2" stroke-linecap="round"
-							stroke-linejoin="round" aria-hidden="true">
-							<path d="M18 6L6 18M6 6l12 12" />
-						</svg>
-					</button>
-				</div>
-			{/if}
+			<ExerciseSearchBox
+				{allExercises}
+				{searchQuery}
+				{selectedExercise}
+				muscleGroupLabels={MUSCLE_GROUP_LABELS}
+				onsearch={(query) => (searchQuery = query)}
+				onselect={selectExercise}
+				onclear={clearSelection}
+			/>
 
 			<!-- Nome (apenas para novo) -->
 			{#if !selectedExercise}
@@ -344,98 +237,28 @@
 				</div>
 
 				<!-- Grupo muscular — chips horizontais scrolláveis -->
-				<div class="space-y-2">
-					<p class="section-label">Grupo muscular</p>
-					<div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-						{#each MUSCLE_GROUPS as group (group)}
-							<button
-								type="button"
-								onclick={() => (muscleGroup = group)}
-								class="shrink-0 rounded-xl border px-3.5 py-2.5 text-[13px] font-bold
-									transition-all active:scale-95 whitespace-nowrap
-									{muscleGroup === group
-										? 'border-gym-accent bg-gym-accent/15 text-gym-accent'
-										: 'border-gym-border bg-gym-surface text-gym-muted active:bg-gym-surface2'}"
-							>
-								{MUSCLE_GROUP_LABELS[group]}
-							</button>
-						{/each}
-					</div>
-				</div>
+				<MuscleGroupPicker
+					selected={muscleGroup}
+					groups={MUSCLE_GROUPS}
+					labels={MUSCLE_GROUP_LABELS}
+					onchange={(group) => (muscleGroup = group)}
+				/>
 			{/if}
 
 			<!-- Prescrição -->
-			<fieldset class="space-y-4">
-				<legend class="section-label">Prescrição</legend>
-
-				<!-- Preview -->
-				<div class="rounded-xl border border-gym-accent/20 bg-gym-accent/5 px-4 py-2.5">
-					<p class="text-[13px] font-semibold text-gym-accent">{prescriptionPreview}</p>
-				</div>
-
-				<!-- Séries / Reps Mín / Reps Máx -->
-				<div class="grid grid-cols-3 gap-3">
-					<div class="space-y-2">
-						<label for="target-sets" class="section-label block">Séries</label>
-						<input
-							id="target-sets"
-							type="number"
-							min="1"
-							max="20"
-							bind:value={targetSets}
-							class="input-base text-center text-[17px] font-black px-2"
-						/>
-					</div>
-					<div class="space-y-2">
-						<label for="reps-min" class="section-label block">Reps mín.</label>
-						<input
-							id="reps-min"
-							type="number"
-							min="1"
-							max="100"
-							bind:value={targetRepsMin}
-							class="input-base text-center text-[17px] font-black px-2"
-						/>
-					</div>
-					<div class="space-y-2">
-						<label for="reps-max" class="section-label block">Reps máx.</label>
-						<input
-							id="reps-max"
-							type="number"
-							min="1"
-							max="100"
-							bind:value={targetRepsMax}
-							class="input-base text-center text-[17px] font-black px-2"
-						/>
-					</div>
-				</div>
-
-				<!-- Descanso (slider estilizado) -->
-				<div class="space-y-3">
-					<div class="flex items-center justify-between">
-						<p class="section-label">Descanso entre séries</p>
-						<span
-							class="rounded-lg border border-gym-border bg-gym-surface
-								px-2.5 py-1 text-[13px] font-bold text-gym-text"
-						>
-							{restDisplay}
-						</span>
-					</div>
-					<input
-						id="rest-seconds"
-						type="range"
-						min="0"
-						max="300"
-						step="15"
-						bind:value={restSeconds}
-						class="w-full"
-						aria-label="Tempo de descanso em segundos"
-					/>
-					<div class="flex justify-between text-[10px] text-gym-muted/60 font-medium">
-						<span>0s</span><span>1min</span><span>2min</span><span>3min</span><span>4min</span><span>5min</span>
-					</div>
-				</div>
-			</fieldset>
+			<PrescriptionFields
+				{targetSets}
+				{targetRepsMin}
+				{targetRepsMax}
+				{restSeconds}
+				{prescriptionPreview}
+				onchange={(field, value) => {
+					if (field === 'targetSets') targetSets = value;
+					else if (field === 'targetRepsMin') targetRepsMin = value;
+					else if (field === 'targetRepsMax') targetRepsMax = value;
+					else if (field === 'restSeconds') restSeconds = value;
+				}}
+			/>
 
 			<!-- Observações (apenas para novo) -->
 			{#if !selectedExercise}
@@ -456,35 +279,19 @@
 
 			<!-- Erro de save -->
 			{#if saveState === 'error' && saveError}
-				<div role="alert"
-					class="rounded-2xl border border-gym-danger/30 bg-gym-danger/5 p-4
-						text-[14px] text-red-300 animate-slide-up">
-					{saveError}
-				</div>
+				<ErrorAlert message={saveError} />
 			{/if}
 
 			<!-- Submit -->
-			<button
-				type="submit"
-				id="btn-submit-exercicio"
+			<SpinnerButton
+				loading={saveState === 'saving'}
 				disabled={!canSubmit}
-				class="btn-primary shadow-lg shadow-gym-accent/20"
+				id="btn-submit-exercicio"
+				type="submit"
 			>
-				{#if saveState === 'saving'}
-					<svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"
-						stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-						stroke-linejoin="round" aria-hidden="true">
-						<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-					</svg>
-					Salvando...
-				{:else}
-					<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-						stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<path d="M12 5v14M5 12h14" />
-					</svg>
-					Adicionar exercício
-				{/if}
-			</button>
+				<span slot="loading">Salvando...</span>
+				<span>Adicionar exercício</span>
+			</SpinnerButton>
 		</form>
 	</div>
 {/if}

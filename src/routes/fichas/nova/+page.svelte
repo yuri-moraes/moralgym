@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { getContainer } from '$lib/container';
+	import BackButton from '$ui/components/shared/BackButton.svelte';
+	import SpinnerButton from '$ui/components/shared/SpinnerButton.svelte';
+	import ErrorAlert from '$ui/components/shared/ErrorAlert.svelte';
+	import SplitCountPicker from '$ui/components/nova-ficha/SplitCountPicker.svelte';
+	import SplitNameList from '$ui/components/nova-ficha/SplitNameList.svelte';
 	import type { SplitCount } from '$core/domain/entities/Routine';
 
 	type SaveState = 'idle' | 'saving' | 'error';
@@ -17,10 +22,22 @@
 		E: 'bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/30',
 	};
 
+	const PLACEHOLDERS = [
+		'Ex.: Peito e tríceps',
+		'Ex.: Costas e bíceps',
+		'Ex.: Pernas',
+		'Ex.: Ombros',
+		'Ex.: Core e cardio'
+	] as const;
+
 	let name = $state('');
 	let description = $state('');
 	let splitCount = $state<SplitCount>(3);
 	let splitNames = $state<string[]>(['', '', '', '', '']);
+
+	function getPlaceholder(index: number): string {
+		return PLACEHOLDERS[index] ?? `Treino ${index + 1}`;
+	}
 
 	let saveState = $state<SaveState>('idle');
 	let errorMessage = $state<string | null>(null);
@@ -72,18 +89,7 @@
 <div class="animate-slide-up">
 	<!-- ── Header ───────────────────────────────────────────────── -->
 	<div class="flex items-center gap-3 px-5 pt-5 pb-2">
-		<a
-			href="/fichas"
-			class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl
-				border border-gym-border bg-gym-surface text-gym-muted
-				transition-all active:bg-gym-surface2 active:scale-95"
-			aria-label="Voltar para fichas"
-		>
-			<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-				stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-				<path d="M15 6l-6 6 6 6" />
-			</svg>
-		</a>
+		<BackButton href="/fichas" label="Voltar para fichas" />
 		<div>
 			<h1 class="text-[20px] font-black text-gym-text">Nova ficha</h1>
 			<p class="text-[13px] text-gym-muted">Monte sua rotina de treinos</p>
@@ -131,119 +137,36 @@
 		</div>
 
 		<!-- Seletor de divisão -->
-		<fieldset class="space-y-3">
-			<legend class="section-label">Divisão</legend>
-
-			<div class="grid grid-cols-5 gap-2" role="radiogroup" aria-label="Número de divisões">
-				{#each SPLIT_OPTIONS as option (option)}
-					<button
-						type="button"
-						role="radio"
-						aria-checked={splitCount === option}
-						onclick={() => (splitCount = option)}
-						class="flex flex-col items-center justify-center rounded-2xl border py-3
-							text-[12px] font-bold transition-all duration-150
-							{splitCount === option
-								? 'border-gym-accent bg-gym-accent/15 text-gym-accent ring-1 ring-gym-accent/30'
-								: 'border-gym-border bg-gym-surface text-gym-muted active:bg-gym-surface2'}"
-					>
-						<span class="text-[18px] font-black leading-none">
-							{option}
-						</span>
-						<span class="mt-0.5 opacity-70">
-							{option === 1 ? 'dia' : 'dias'}
-						</span>
-					</button>
-				{/each}
-			</div>
-
-			<!-- Preview das letras que serão criadas -->
-			<div class="flex items-center gap-1.5 flex-wrap">
-				{#each visibleSplits as s (s.label)}
-					<span
-						class="rounded-lg px-2 py-1 text-[12px] font-bold
-							animate-fade-in {SPLIT_COLORS[s.label] ?? 'bg-gym-accent/15 text-gym-accent'}"
-					>
-						{s.label}
-					</span>
-				{/each}
-			</div>
-		</fieldset>
+		<SplitCountPicker
+			value={splitCount}
+			labels={SPLIT_LABELS.slice()}
+			colors={SPLIT_COLORS}
+			onchange={(count) => (splitCount = count)}
+		/>
 
 		<!-- Nomes dos splits -->
-		<div class="space-y-3">
-			<p class="section-label">Nomes dos dias</p>
-			<ul class="space-y-2.5">
-				{#each visibleSplits as split (split.label)}
-					<li class="flex items-center gap-3">
-						<span
-							class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl
-								text-[16px] font-black
-								{SPLIT_COLORS[split.label] ?? 'bg-gym-accent/15 text-gym-accent'}"
-							aria-hidden="true"
-						>
-							{split.label}
-						</span>
-						<input
-							type="text"
-							maxlength="40"
-							autocomplete="off"
-							bind:value={splitNames[split.index]}
-							aria-label={`Nome do dia ${split.label}`}
-							placeholder={defaultPlaceholder(split.index)}
-							class="input-base"
-						/>
-					</li>
-				{/each}
-			</ul>
-		</div>
+		<SplitNameList
+			visibleSplits={visibleSplits}
+			names={splitNames}
+			colors={SPLIT_COLORS}
+			onchange={(index, name) => (splitNames[index] = name)}
+			placeholders={PLACEHOLDERS.slice()}
+		/>
 
 		<!-- Erro -->
 		{#if saveState === 'error' && errorMessage}
-			<div
-				role="alert"
-				class="rounded-2xl border border-gym-danger/30 bg-gym-danger/5 p-4
-					text-[14px] text-red-300 animate-slide-up"
-			>
-				{errorMessage}
-			</div>
+			<ErrorAlert message={errorMessage} />
 		{/if}
 
 		<!-- Submit -->
-		<button
-			type="submit"
-			id="btn-submit-nova-ficha"
+		<SpinnerButton
+			loading={saveState === 'saving'}
 			disabled={!canSubmit}
-			class="btn-primary shadow-lg shadow-gym-accent/20"
+			id="btn-submit-nova-ficha"
+			type="submit"
 		>
-			{#if saveState === 'saving'}
-				<svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"
-					stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-					stroke-linejoin="round" aria-hidden="true">
-					<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-				</svg>
-				Criando ficha...
-			{:else}
-				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-					stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-					<path d="M20 6L9 17l-5-5" />
-				</svg>
-				Criar ficha
-			{/if}
-		</button>
+			<span slot="loading">Criando ficha...</span>
+			<span>Criar ficha</span>
+		</SpinnerButton>
 	</form>
 </div>
-
-<script lang="ts" module>
-	const PLACEHOLDERS = [
-		'Ex.: Peito e tríceps',
-		'Ex.: Costas e bíceps',
-		'Ex.: Pernas',
-		'Ex.: Ombros',
-		'Ex.: Core e cardio'
-	] as const;
-
-	export function defaultPlaceholder(index: number): string {
-		return PLACEHOLDERS[index] ?? `Treino ${index + 1}`;
-	}
-</script>
