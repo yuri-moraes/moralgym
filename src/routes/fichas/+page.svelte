@@ -4,6 +4,7 @@
 	import PageLoadingSkeleton from '$ui/components/shared/PageLoadingSkeleton.svelte';
 	import ErrorAlert from '$ui/components/shared/ErrorAlert.svelte';
 	import EmptyState from '$ui/components/shared/EmptyState.svelte';
+	import ConfirmDialog from '$ui/components/shared/ConfirmDialog.svelte';
 	import RoutineHeader from '$ui/components/fichas/RoutineHeader.svelte';
 	import SplitCard from '$ui/components/fichas/SplitCard.svelte';
 	import type { Routine } from '$core/domain/entities/Routine';
@@ -15,6 +16,8 @@
 	let routine = $state<Routine | null>(null);
 	let splits = $state<readonly Split[]>([]);
 	let errorMessage = $state<string | null>(null);
+	let showDeleteDialog = $state(false);
+	let deleteLoading = $state(false);
 
 	let orderedSplits = $derived(
 		[...splits].sort((a, b) => a.orderIndex - b.orderIndex)
@@ -48,6 +51,33 @@
 			}
 		})();
 	});
+
+	function handleDelete(routineToDelete: Routine) {
+		routine = routineToDelete;
+		showDeleteDialog = true;
+	}
+
+	async function confirmDelete() {
+		if (!routine) return;
+
+		deleteLoading = true;
+		try {
+			const { deleteRoutine } = getContainer();
+			await deleteRoutine.execute({ routineId: routine.id });
+
+			// Recarregar fichas após deleção
+			const { routines } = getContainer();
+			const active = await routines.findActive();
+			routine = active;
+			splits = active ? await routines.findSplits(active.id) : [];
+			showDeleteDialog = false;
+		} catch (err) {
+			console.error('[fichas] Falha ao deletar', err);
+			errorMessage = err instanceof Error ? err.message : 'Erro ao deletar ficha.';
+		} finally {
+			deleteLoading = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -87,7 +117,7 @@
 
 {:else}
 	<div class="animate-fade-in">
-		<RoutineHeader {routine} {splits} />
+		<RoutineHeader {routine} {splits} onDelete={handleDelete} />
 
 		<!-- Lista de splits ───────────────────────────── -->
 		{#if orderedSplits.length === 0}
@@ -130,5 +160,18 @@
 				Nova ficha
 			</a>
 		</div>
+
+		<!-- Diálogo de confirmação de deleção -->
+		<ConfirmDialog
+			isOpen={showDeleteDialog}
+			title="Deletar ficha?"
+			message="Esta ação é irreversível. Todos os dados da ficha e seus treinos serão removidos."
+			confirmText="Deletar"
+			cancelText="Cancelar"
+			isDangerous
+			loading={deleteLoading}
+			onConfirm={confirmDelete}
+			onCancel={() => (showDeleteDialog = false)}
+		/>
 	</div>
 {/if}

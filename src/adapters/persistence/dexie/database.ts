@@ -62,6 +62,15 @@ export interface WorkoutLogRecord {
 	notes?: string;
 }
 
+export interface WorkoutSessionRecord {
+	id: string;
+	routineId: string;
+	splitId: string;
+	status: 'active' | 'finished' | 'abandoned';
+	startedAt: number; // epoch ms, UTC
+	finishedAt?: number; // epoch ms, UTC
+}
+
 // ============================================================
 // MoralGymDatabase — Adapter concreto.
 // NÃO exportar esta classe para o Core: consumir apenas via Ports.
@@ -73,6 +82,7 @@ export class MoralGymDatabase extends Dexie {
 	splits!: EntityTable<SplitRecord, 'id'>;
 	splitExercises!: EntityTable<SplitExerciseRecord, 'id'>;
 	workoutLogs!: EntityTable<WorkoutLogRecord, 'id'>;
+	workoutSessions!: EntityTable<WorkoutSessionRecord, 'id'>;
 
 	constructor(name = 'moralgym') {
 		super(name);
@@ -83,7 +93,8 @@ export class MoralGymDatabase extends Dexie {
 			splits: 'id, routineId, [routineId+orderIndex]',
 			splitExercises: 'id, splitId, exerciseId, [splitId+orderIndex]',
 			workoutLogs:
-				'id, splitId, exerciseId, performedAt, [exerciseId+performedAt], [splitId+performedAt]'
+				'id, splitId, exerciseId, performedAt, [exerciseId+performedAt], [splitId+performedAt]',
+			workoutSessions: 'id, status, startedAt'
 		});
 	}
 }

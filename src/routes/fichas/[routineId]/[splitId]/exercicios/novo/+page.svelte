@@ -41,6 +41,8 @@
 	let targetRepsMax = $state(12);
 	let restSeconds = $state(90);
 	let exerciseNotes = $state('');
+	let mediaFile = $state<File | null>(null);
+	let mediaPreview = $state<string>('');
 
 	// ── Busca ───────────────────────────────────────────────────
 	let searchQuery = $state('');
@@ -89,6 +91,26 @@
 		showSearch = false;
 	}
 
+	function handleMediaChange(event: Event) {
+		const target = event.target as HTMLInputElement;
+		const file = target.files?.[0];
+		if (!file) return;
+
+		mediaFile = file;
+
+		// Criar preview
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			mediaPreview = e.target?.result as string;
+		};
+		reader.readAsDataURL(file);
+	}
+
+	function clearMedia() {
+		mediaFile = null;
+		mediaPreview = '';
+	}
+
 	onMount(() => {
 		const { routineId, splitId } = $page.params;
 		(async () => {
@@ -124,7 +146,7 @@
 		saveError = null;
 
 		try {
-			const { routines, exercises: exerciseRepo } = getContainer();
+			const { routines, createExercise } = getContainer();
 
 			const now = new Date();
 			let exercise: Exercise;
@@ -132,15 +154,13 @@
 			if (selectedExercise) {
 				exercise = selectedExercise;
 			} else {
-				exercise = {
-					id: crypto.randomUUID(),
+				const result = await createExercise.execute({
 					name: exerciseName.trim(),
 					muscleGroup,
 					notes: exerciseNotes.trim() || undefined,
-					createdAt: now,
-					updatedAt: now
-				};
-				await exerciseRepo.save(exercise);
+					mediaFile: mediaFile || undefined
+				});
+				exercise = result.exercise;
 			}
 
 			const allSplits = await routines.findSplits(routine.id);
@@ -259,6 +279,60 @@
 					else if (field === 'restSeconds') restSeconds = value;
 				}}
 			/>
+
+			<!-- Mídia (imagem ou vídeo) -->
+			{#if !selectedExercise}
+				<fieldset class="space-y-2 border-0 p-0">
+					<legend class="section-label block">
+						Mídia <span class="font-normal normal-case text-gym-muted/60">(opcional: imagem ou vídeo MP4)</span>
+					</legend>
+
+					{#if mediaPreview}
+						<div class="relative w-full h-48 bg-gym-surface rounded-lg overflow-hidden mb-3">
+							{#if mediaFile?.type.startsWith('image/')}
+								<img src={mediaPreview} alt="Preview da imagem" class="w-full h-full object-cover" />
+							{:else if mediaFile?.type === 'video/mp4'}
+								<!-- svelte-ignore a11y_media_has_caption -->
+								<video src={mediaPreview} controls class="w-full h-full object-cover"></video>
+							{/if}
+							<button
+								type="button"
+								class="absolute top-2 right-2 p-1 rounded-lg bg-gym-danger/80 text-white hover:bg-gym-danger"
+								onclick={clearMedia}
+								aria-label="Remover mídia"
+							>
+								<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<line x1="18" y1="6" x2="6" y2="18" />
+									<line x1="6" y1="6" x2="18" y2="18" />
+								</svg>
+							</button>
+						</div>
+					{:else}
+						<input
+							type="file"
+							id="exercise-media-upload"
+							accept="image/jpeg,image/png,image/webp,video/mp4"
+							onchange={handleMediaChange}
+							class="hidden"
+							aria-label="Upload de mídia do exercício"
+						/>
+						<label
+							for="exercise-media-upload"
+							class="flex items-center justify-center gap-2 h-32 rounded-lg border-2 border-dashed border-gym-muted/30 cursor-pointer hover:border-gym-accent/50 transition-colors"
+						>
+							<div class="text-center">
+								<svg class="h-6 w-6 mx-auto mb-1 text-gym-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+									<polyline points="17 8 12 3 7 8" />
+									<line x1="12" y1="3" x2="12" y2="15" />
+								</svg>
+								<p class="text-[13px] font-medium text-gym-text">Clique para enviar</p>
+								<p class="text-[12px] text-gym-muted">PNG, JPEG, WebP ou MP4</p>
+							</div>
+						</label>
+					{/if}
+				</fieldset>
+			{/if}
 
 			<!-- Observações (apenas para novo) -->
 			{#if !selectedExercise}

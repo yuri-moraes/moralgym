@@ -12,6 +12,7 @@ export interface ImageCompressionOptions {
  * Vídeos .mp4 passam direto (validados por tamanho/duração).
  */
 export interface MediaProcessor {
+	process(file: File, options?: ImageCompressionOptions): Promise<ExerciseMedia>;
 	compressImage(file: File, options?: ImageCompressionOptions): Promise<ExerciseMedia>;
 	validateVideo(file: File): Promise<ExerciseMedia>;
 }

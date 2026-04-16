@@ -38,6 +38,23 @@ export class MediaProcessingError extends Error {
  * - Libera memória com `close()` após o encode.
  */
 export class CanvasMediaProcessor implements MediaProcessor {
+	/**
+	 * Processa um arquivo de mídia automaticamente detectando seu tipo.
+	 * Imagens são comprimidas para WebP; vídeos são validados.
+	 */
+	async process(file: File, options?: ImageCompressionOptions): Promise<ExerciseMedia> {
+		if (file.type.startsWith('image/')) {
+			return this.compressImage(file, options);
+		} else if (file.type === 'video/mp4') {
+			return this.validateVideo(file);
+		} else {
+			throw new MediaProcessingError(
+				`Tipo de arquivo não suportado: ${file.type}. Use imagens (JPEG/PNG) ou vídeos MP4.`,
+				'UNSUPPORTED_IMAGE'
+			);
+		}
+	}
+
 	async compressImage(file: File, options?: ImageCompressionOptions): Promise<ExerciseMedia> {
 		if (!ACCEPTED_IMAGE_TYPES.includes(file.type as (typeof ACCEPTED_IMAGE_TYPES)[number])) {
 			throw new MediaProcessingError(

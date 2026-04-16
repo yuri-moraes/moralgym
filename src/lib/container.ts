@@ -14,6 +14,7 @@ import { db } from '../adapters/persistence/dexie/database';
 import { DexieExerciseRepository } from '../adapters/persistence/dexie/DexieExerciseRepository';
 import { DexieRoutineRepository } from '../adapters/persistence/dexie/DexieRoutineRepository';
 import { DexieWorkoutLogRepository } from '../adapters/persistence/dexie/DexieWorkoutLogRepository';
+import { DexieWorkoutSessionRepository } from '../adapters/persistence/dexie/DexieWorkoutSessionRepository';
 import { WebWorkerRestTimer } from '../adapters/timer/WebWorkerRestTimer';
 
 import type { MediaProcessor } from '../core/application/ports/MediaProcessor';
@@ -22,16 +23,24 @@ import type { RestTimer } from '../core/application/ports/RestTimer';
 import type { ExerciseRepository } from '../core/application/ports/repositories/ExerciseRepository';
 import type { RoutineRepository } from '../core/application/ports/repositories/RoutineRepository';
 import type { WorkoutLogRepository } from '../core/application/ports/repositories/WorkoutLogRepository';
+import type { WorkoutSessionRepository } from '../core/application/ports/repositories/WorkoutSessionRepository';
 
 import { CreateRoutineUseCase } from '../core/application/use-cases/CreateRoutineUseCase';
+import { UpdateRoutineUseCase } from '../core/application/use-cases/UpdateRoutineUseCase';
+import { DeleteRoutineUseCase } from '../core/application/use-cases/DeleteRoutineUseCase';
+import { CreateExerciseUseCase } from '../core/application/use-cases/CreateExerciseUseCase';
+import { DeleteExerciseUseCase } from '../core/application/use-cases/DeleteExerciseUseCase';
 import { LogSetUseCase } from '../core/application/use-cases/LogSetUseCase';
 import { StartRestTimerUseCase } from '../core/application/use-cases/StartRestTimerUseCase';
+import { StartWorkoutSessionUseCase } from '../core/application/use-cases/StartWorkoutSessionUseCase';
+import { FinishWorkoutSessionUseCase } from '../core/application/use-cases/FinishWorkoutSessionUseCase';
 
 export interface AppContainer {
 	// Repositórios
 	readonly exercises: ExerciseRepository;
 	readonly routines: RoutineRepository;
 	readonly workoutLogs: WorkoutLogRepository;
+	readonly sessions: WorkoutSessionRepository;
 
 	// Serviços de infraestrutura
 	readonly mediaProcessor: MediaProcessor;
@@ -42,6 +51,12 @@ export interface AppContainer {
 	readonly startRestTimer: StartRestTimerUseCase;
 	readonly logSet: LogSetUseCase;
 	readonly createRoutine: CreateRoutineUseCase;
+	readonly updateRoutine: UpdateRoutineUseCase;
+	readonly deleteRoutine: DeleteRoutineUseCase;
+	readonly createExercise: CreateExerciseUseCase;
+	readonly deleteExercise: DeleteExerciseUseCase;
+	readonly startWorkoutSession: StartWorkoutSessionUseCase;
+	readonly finishWorkoutSession: FinishWorkoutSessionUseCase;
 }
 
 let instance: AppContainer | null = null;
@@ -52,6 +67,7 @@ export function getContainer(): AppContainer {
 	const exercises = new DexieExerciseRepository(db);
 	const routines = new DexieRoutineRepository(db);
 	const workoutLogs = new DexieWorkoutLogRepository(db);
+	const sessions = new DexieWorkoutSessionRepository();
 
 	const mediaProcessor = new CanvasMediaProcessor();
 	const restTimer = new WebWorkerRestTimer();
@@ -60,17 +76,30 @@ export function getContainer(): AppContainer {
 	const startRestTimer = new StartRestTimerUseCase({ restTimer, notifications });
 	const logSet = new LogSetUseCase({ workoutLogs, startRestTimer });
 	const createRoutine = new CreateRoutineUseCase({ routines });
+	const updateRoutine = new UpdateRoutineUseCase({ routines });
+	const deleteRoutine = new DeleteRoutineUseCase({ routines });
+	const createExercise = new CreateExerciseUseCase({ exercises, mediaProcessor });
+	const deleteExercise = new DeleteExerciseUseCase({ exercises });
+	const startWorkoutSession = new StartWorkoutSessionUseCase({ routines, sessions });
+	const finishWorkoutSession = new FinishWorkoutSessionUseCase({ sessions });
 
 	instance = {
 		exercises,
 		routines,
 		workoutLogs,
+		sessions,
 		mediaProcessor,
 		restTimer,
 		notifications,
 		startRestTimer,
 		logSet,
-		createRoutine
+		createRoutine,
+		updateRoutine,
+		deleteRoutine,
+		createExercise,
+		deleteExercise,
+		startWorkoutSession,
+		finishWorkoutSession
 	};
 	return instance;
 }

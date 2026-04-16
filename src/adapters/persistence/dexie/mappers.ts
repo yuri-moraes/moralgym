@@ -1,6 +1,7 @@
 import type { Exercise } from '../../../core/domain/entities/Exercise';
+import type { WorkoutSession } from '../../../core/domain/entities/WorkoutSession';
 import { isMuscleGroup, type MuscleGroup } from '../../../core/domain/value-objects/MuscleGroup';
-import type { ExerciseRecord } from './database';
+import type { ExerciseRecord, WorkoutSessionRecord } from './database';
 
 export function exerciseToRecord(e: Exercise): ExerciseRecord {
 	return {
@@ -29,5 +30,27 @@ export function recordToExercise(r: ExerciseRecord): Exercise {
 		notes: r.notes,
 		createdAt: new Date(r.createdAt),
 		updatedAt: new Date(r.updatedAt)
+	};
+}
+
+export function sessionToRecord(s: WorkoutSession): WorkoutSessionRecord {
+	return {
+		id: s.id,
+		routineId: s.routineId,
+		splitId: s.splitId,
+		status: s.status,
+		startedAt: s.startedAt.getTime(),
+		finishedAt: s.finishedAt?.getTime()
+	};
+}
+
+export function recordToSession(r: WorkoutSessionRecord): WorkoutSession {
+	return {
+		id: r.id,
+		routineId: r.routineId,
+		splitId: r.splitId,
+		status: r.status,
+		startedAt: new Date(r.startedAt),
+		finishedAt: r.finishedAt ? new Date(r.finishedAt) : undefined
 	};
 }
