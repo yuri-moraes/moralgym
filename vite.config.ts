@@ -78,8 +78,7 @@ export default defineConfig({
 			workbox: {
 				// Ativos pré-cacheados na instalação do SW.
 				globPatterns: [
-					'client/**/*.{js,css,ico,png,svg,webp,woff,woff2}',
-					'prerendered/**/*.html'
+					'client/**/*.{js,css,ico,png,svg,webp,woff,woff2,html}',
 				],
 				// SPA fallback: qualquer navegação offline cai no index.html
 				// gerado pelo adapter-static, que carrega o router do SvelteKit.
