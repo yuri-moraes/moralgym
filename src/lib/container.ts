@@ -18,11 +18,13 @@ import { DexieWorkoutLogRepository } from '../adapters/persistence/dexie/DexieWo
 import { DexieWorkoutSessionRepository } from '../adapters/persistence/dexie/DexieWorkoutSessionRepository';
 import { WebWorkerRestTimer } from '../adapters/timer/WebWorkerRestTimer';
 import { LocalBackupAdapter } from '../adapters/backup/LocalBackupAdapter';
+import { LocalStorageAdapter } from '../adapters/storage/LocalStorageAdapter';
 
 import type { BackupService } from '../core/application/ports/BackupService';
 import type { MediaProcessor } from '../core/application/ports/MediaProcessor';
 import type { NotificationService } from '../core/application/ports/NotificationService';
 import type { RestTimer } from '../core/application/ports/RestTimer';
+import type { StoragePort } from '../core/application/ports/StoragePort';
 import type { ExerciseRepository } from '../core/application/ports/repositories/ExerciseRepository';
 import type { RoutineRepository } from '../core/application/ports/repositories/RoutineRepository';
 import type { SplitRepository } from '../core/application/ports/repositories/SplitRepository';
@@ -33,9 +35,12 @@ import { CreateRoutineUseCase } from '../core/application/use-cases/CreateRoutin
 import { UpdateRoutineUseCase } from '../core/application/use-cases/UpdateRoutineUseCase';
 import { DeleteRoutineUseCase } from '../core/application/use-cases/DeleteRoutineUseCase';
 import { CreateExerciseUseCase } from '../core/application/use-cases/CreateExerciseUseCase';
+import { UpdateExerciseUseCase } from '../core/application/use-cases/UpdateExerciseUseCase';
 import { DeleteExerciseUseCase } from '../core/application/use-cases/DeleteExerciseUseCase';
 import { LogSetUseCase } from '../core/application/use-cases/LogSetUseCase';
 import { StartRestTimerUseCase } from '../core/application/use-cases/StartRestTimerUseCase';
+import { UpdateRestTimerSecondsUseCase } from '../core/application/use-cases/UpdateRestTimerSecondsUseCase';
+import { PersistRestTimerUseCase } from '../core/application/use-cases/PersistRestTimerUseCase';
 import { StartWorkoutSessionUseCase } from '../core/application/use-cases/StartWorkoutSessionUseCase';
 import { FinishWorkoutSessionUseCase } from '../core/application/use-cases/FinishWorkoutSessionUseCase';
 import { ExportBackupUseCase } from '../core/application/use-cases/ExportBackupUseCase';
@@ -54,14 +59,18 @@ export interface AppContainer {
 	readonly restTimer: RestTimer;
 	readonly notifications: NotificationService;
 	readonly backup: BackupService;
+	readonly storage: StoragePort;
 
 	// Casos de uso prontos para a UI consumir
 	readonly startRestTimer: StartRestTimerUseCase;
+	readonly updateRestTimerSeconds: UpdateRestTimerSecondsUseCase;
+	readonly persistRestTimer: PersistRestTimerUseCase;
 	readonly logSet: LogSetUseCase;
 	readonly createRoutine: CreateRoutineUseCase;
 	readonly updateRoutine: UpdateRoutineUseCase;
 	readonly deleteRoutine: DeleteRoutineUseCase;
 	readonly createExercise: CreateExerciseUseCase;
+	readonly updateExercise: UpdateExerciseUseCase;
 	readonly deleteExercise: DeleteExerciseUseCase;
 	readonly startWorkoutSession: StartWorkoutSessionUseCase;
 	readonly finishWorkoutSession: FinishWorkoutSessionUseCase;
@@ -84,13 +93,17 @@ export function getContainer(): AppContainer {
 	const restTimer = new WebWorkerRestTimer();
 	const notifications = new BrowserNotificationService();
 	const backup = new LocalBackupAdapter(exercises, routines, splits, workoutLogs, sessions, db);
+	const storage: StoragePort = new LocalStorageAdapter();
 
 	const startRestTimer = new StartRestTimerUseCase({ restTimer, notifications });
+	const updateRestTimerSeconds = new UpdateRestTimerSecondsUseCase({ restTimer });
+	const persistRestTimer = new PersistRestTimerUseCase({ restTimer, storage });
 	const logSet = new LogSetUseCase({ workoutLogs, startRestTimer });
 	const createRoutine = new CreateRoutineUseCase({ routines });
 	const updateRoutine = new UpdateRoutineUseCase({ routines });
 	const deleteRoutine = new DeleteRoutineUseCase({ routines });
 	const createExercise = new CreateExerciseUseCase({ exercises, mediaProcessor });
+	const updateExercise = new UpdateExerciseUseCase({ exercises, mediaProcessor });
 	const deleteExercise = new DeleteExerciseUseCase({ exercises });
 	const startWorkoutSession = new StartWorkoutSessionUseCase({ routines, sessions });
 	const finishWorkoutSession = new FinishWorkoutSessionUseCase({ sessions });
@@ -120,12 +133,16 @@ export function getContainer(): AppContainer {
 		restTimer,
 		notifications,
 		backup,
+		storage,
 		startRestTimer,
+		updateRestTimerSeconds,
+		persistRestTimer,
 		logSet,
 		createRoutine,
 		updateRoutine,
 		deleteRoutine,
 		createExercise,
+		updateExercise,
 		deleteExercise,
 		startWorkoutSession,
 		finishWorkoutSession,

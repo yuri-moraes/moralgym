@@ -14,6 +14,11 @@ export interface RestTimer {
 	pause(): void;
 	resume(): void;
 	stop(): void;
+	setState(secondsRemaining: number): Promise<void>;
+	getState(): Promise<RestTimerState>;
 	onTick(listener: RestTimerListener): () => void;
 	onComplete(listener: () => void): () => void;
 }
+
+// Importado de RestTimerState VO para manter DRY principle
+export type { RestTimerState } from '../value-objects/RestTimerState';

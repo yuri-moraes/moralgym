@@ -15,6 +15,10 @@ export interface ExerciseRecord {
 	mediaBlob?: Blob;
 	mediaMimeType?: 'image/webp' | 'video/mp4';
 	notes?: string;
+	difficulty?: 'beginner' | 'intermediate' | 'advanced';
+	targetRepsMin?: number;
+	targetRepsMax?: number;
+	avgDurationSeconds?: number;
 	createdAt: number;
 	updatedAt: number;
 }

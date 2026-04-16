@@ -22,7 +22,8 @@ export type InboundMessage =
 	| { type: 'start'; totalSeconds: number }
 	| { type: 'pause' }
 	| { type: 'resume' }
-	| { type: 'stop' };
+	| { type: 'stop' }
+	| { type: 'setState'; remainingSeconds: number };
 
 export type OutboundMessage =
 	| { type: 'tick'; remainingSeconds: number; totalSeconds: number }
@@ -109,6 +110,19 @@ function stop(): void {
 	post({ type: 'state', running: false, paused: false });
 }
 
+function setState(remainingSeconds: number): void {
+	// Recalcular deadline se timer está rodando
+	if (state.intervalId !== null && state.pausedAt === null) {
+		state.deadlineAt = Date.now() + (remainingSeconds * 1000);
+		// Emitir tick imediato para atualizar UI
+		emitTick();
+	} else {
+		// Se não está rodando, apenas atualizar o estado interno
+		state.totalMs = remainingSeconds * 1000;
+		state.deadlineAt = Date.now() + state.totalMs;
+	}
+}
+
 ctx.addEventListener('message', (event: MessageEvent<InboundMessage>) => {
 	const msg = event.data;
 	switch (msg.type) {
@@ -123,6 +137,9 @@ ctx.addEventListener('message', (event: MessageEvent<InboundMessage>) => {
 			break;
 		case 'stop':
 			stop();
+			break;
+		case 'setState':
+			setState(msg.remainingSeconds);
 			break;
 	}
 });

@@ -14,6 +14,11 @@ export class DexieWorkoutSessionRepository implements WorkoutSessionRepository {
 		return record ? recordToSession(record) : null;
 	}
 
+	async findAll(): Promise<readonly WorkoutSession[]> {
+		const records = await db.workoutSessions.orderBy('startedAt').reverse().toArray();
+		return records.map(recordToSession);
+	}
+
 	async save(session: WorkoutSession): Promise<void> {
 		const record = sessionToRecord(session);
 		await db.workoutSessions.put(record);

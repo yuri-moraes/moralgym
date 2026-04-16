@@ -1,7 +1,8 @@
 import type {
 	RestTimer,
 	RestTimerListener,
-	RestTimerTick
+	RestTimerTick,
+	RestTimerState
 } from '../../core/application/ports/RestTimer';
 
 // Mesmos types do worker, duplicados aqui para evitar import cruzado entre
@@ -10,7 +11,8 @@ type InboundMessage =
 	| { type: 'start'; totalSeconds: number }
 	| { type: 'pause' }
 	| { type: 'resume' }
-	| { type: 'stop' };
+	| { type: 'stop' }
+	| { type: 'setState'; remainingSeconds: number };
 
 type OutboundMessage =
 	| { type: 'tick'; remainingSeconds: number; totalSeconds: number }
@@ -26,6 +28,13 @@ export class WebWorkerRestTimer implements RestTimer {
 	private worker: Worker | null = null;
 	private readonly tickListeners = new Set<RestTimerListener>();
 	private readonly completeListeners = new Set<() => void>();
+	private currentState: RestTimerState = {
+		running: false,
+		paused: false,
+		remainingSeconds: 0,
+		totalSeconds: 0,
+		elapsedSeconds: 0
+	};
 
 	start(totalSeconds: number): void {
 		this.ensureWorker();
@@ -42,6 +51,20 @@ export class WebWorkerRestTimer implements RestTimer {
 
 	stop(): void {
 		this.post({ type: 'stop' });
+	}
+
+	setState(remainingSeconds: number): Promise<void> {
+		this.ensureWorker();
+		return new Promise((resolve) => {
+			this.post({ type: 'setState', remainingSeconds });
+			// Resolve imediatamente: setState é otimista
+			// O worker emitirá tick com novo estado
+			resolve();
+		});
+	}
+
+	async getState(): Promise<RestTimerState> {
+		return Promise.resolve(this.currentState);
 	}
 
 	onTick(listener: RestTimerListener): () => void {
@@ -86,11 +109,36 @@ export class WebWorkerRestTimer implements RestTimer {
 				remainingSeconds: msg.remainingSeconds,
 				totalSeconds: msg.totalSeconds
 			};
+			// Atualizar estado local
+			this.currentState = {
+				running: this.currentState.running,
+				paused: this.currentState.paused,
+				remainingSeconds: msg.remainingSeconds,
+				totalSeconds: msg.totalSeconds,
+				elapsedSeconds: msg.totalSeconds - msg.remainingSeconds
+			};
 			for (const listener of this.tickListeners) listener(tick);
 			return;
 		}
 		if (msg.type === 'complete') {
+			// Atualizar estado ao completar
+			this.currentState = {
+				running: false,
+				paused: false,
+				remainingSeconds: 0,
+				totalSeconds: this.currentState.totalSeconds,
+				elapsedSeconds: this.currentState.totalSeconds
+			};
 			for (const listener of this.completeListeners) listener();
+			return;
+		}
+		if (msg.type === 'state') {
+			// Atualizar estado running/paused
+			this.currentState = {
+				...this.currentState,
+				running: msg.running,
+				paused: msg.paused
+			};
 		}
 	}
 }
