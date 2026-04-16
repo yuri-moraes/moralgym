@@ -17,6 +17,7 @@
 	}
 
 	interface ExerciseEntry {
+		exerciseId: string;
 		exerciseName: string;
 		muscleGroup: string;
 		sets: SetRow[];
@@ -118,6 +119,7 @@
 					for (const [exerciseId, sets] of exerciseEntries.entries()) {
 						const ex = exerciseMap.get(exerciseId);
 						exerciseList.push({
+							exerciseId,
 							exerciseName: ex?.name ?? `Exercício ${exerciseId.slice(0, 8)}…`,
 							muscleGroup: ex?.muscleGroup ?? 'other',
 							sets: sets.sort((a, b) => a.setNumber - b.setNumber)

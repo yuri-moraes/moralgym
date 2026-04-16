@@ -9,6 +9,7 @@
 	}
 
 	interface ExerciseEntry {
+		exerciseId: string;
 		exerciseName: string;
 		muscleGroup: string;
 		sets: SetRow[];
@@ -49,7 +50,7 @@
 
 	<!-- Card de exercícios do dia -->
 	<div class="card divide-y divide-gym-border overflow-hidden">
-		{#each session.exercises as entry (entry.exerciseName)}
+		{#each session.exercises as entry (entry.exerciseId)}
 			<div class="p-4 space-y-3">
 				<!-- Nome + badge muscular -->
 				<div class="flex items-start justify-between gap-2">
